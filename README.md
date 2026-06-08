@@ -1,6 +1,21 @@
 # HappyRobot Carrier Sales Automation
 
-FastAPI backend for an inbound carrier sales proof of concept. The API is designed to be called by a HappyRobot voice agent for carrier verification, load search, negotiation guardrails, booking intake, and call logging.
+FastAPI backend and operational dashboard for an inbound carrier sales proof of concept built on the HappyRobot platform.
+
+The workflow lets a carrier call in, verify their MC number, search available loads, negotiate pricing with guardrails, mock-transfer accepted bookings, and write post-call reporting data for a brokerage-facing dashboard.
+
+## Architecture
+
+- `FastAPI` serves the HappyRobot tool endpoints and dashboard.
+- `SQLite` stores demo loads, negotiation state, booking intake rows, and dashboard reporting rows.
+- `HappyRobot Twin` is used as agent memory for future personalization.
+- The dashboard reads from this API's reporting database, not from Twin.
+- Render provides the deployed HTTPS API URL used by the HappyRobot workflow.
+
+Twin and reporting are intentionally separate:
+
+- Twin answers: "What should the agent remember about this carrier next time?"
+- Reporting answers: "What should the brokerage know about call performance and operations?"
 
 ## Local Setup
 
@@ -8,52 +23,76 @@ FastAPI backend for an inbound carrier sales proof of concept. The API is design
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-python init_db.py
-python seed_loads.py
 uvicorn app:app --reload
 ```
 
-The API will be available at `http://127.0.0.1:8000`.
+The app initializes the database and seeds demo loads on startup.
+
+Local API:
+
+```text
+http://127.0.0.1:8000
+```
 
 ## Environment Variables
 
-Create a `.env` file when needed:
+Create a `.env` file:
 
 ```bash
 FMCSA_WEB_KEY=your_fmcsa_key
-API_KEY=optional_shared_secret
+API_KEY=your_shared_secret
 DB_PATH=/optional/path/to/loads.db
 ```
 
-If `API_KEY` is set, protected endpoints require this header:
+If `API_KEY` is set, protected endpoints require:
 
-```bash
+```http
 x-api-key: your_shared_secret
 ```
 
-`/health`, `/docs`, `/openapi.json`, and `/redoc` remain public.
-
-## Core Endpoints
+Public endpoints:
 
 - `GET /health`
+- `GET /docs`
+- `GET /openapi.json`
+- `GET /redoc`
 - `GET /dashboard`
+- `GET /dashboard-data`
+
+Render provides HTTPS for the deployed API.
+
+## HappyRobot Tool Endpoints
+
+Load search:
+
 - `GET /loads`
 - `GET /loads/search?origin=Chicago&destination=Dallas&equipment_type=Dry%20Van`
 - `GET /loads/searchbyid?id=L1001`
 - `GET /loads/L1001`
+
+Carrier verification:
+
 - `POST /carrier/verify`
+
+Negotiation:
+
 - `POST /check-bid`
 - `GET /negotiations/status?session_id=call-123&load_id=L1001`
 - `POST /update-status`
+
+Post-negotiation:
+
 - `POST /booking/intake`
+- `POST /reporting/call`
 - `POST /call-log`
 
-Negotiation state is stored in two simple tables:
+`/call-log` is retained as a simple audit endpoint. The dashboard uses `/reporting/call`.
 
-- `negotiation_sessions`: current state for one `session_id` + `load_id`
-- `negotiation_events`: append-only event history for analytics and audit
+## Negotiation Flow
 
-Nancy can check whether a carrier bid is immediately acceptable with:
+Nancy, the negotiation advisor, uses three backend tools.
+
+First, check whether the carrier offer is immediately acceptable:
 
 ```text
 POST /check-bid
@@ -79,19 +118,19 @@ Carrier price request:
 }
 ```
 
-Nancy can retrieve negotiation memory with:
+Then retrieve negotiation memory:
 
 ```text
 GET /negotiations/status?session_id=call-123&load_id=L1001
 ```
 
-Nancy writes her decision through:
+Finally, write Nancy's decision:
 
 ```text
 POST /update-status
 ```
 
-Counter decision:
+Counter:
 
 ```json
 {
@@ -102,7 +141,7 @@ Counter decision:
 }
 ```
 
-Acceptance decision:
+Accept:
 
 ```json
 {
@@ -112,7 +151,7 @@ Acceptance decision:
 }
 ```
 
-Rejection decision:
+Reject:
 
 ```json
 {
@@ -122,21 +161,109 @@ Rejection decision:
 }
 ```
 
-The backend uses `session_id` and `load_id` to track negotiation history per load.
-`check-bid` records the carrier's latest offer and tells Nancy whether it can be accepted.
-`update-status` validates Nancy's final decision before updating the current session and event history.
+The backend stores negotiation state in:
+
+- `negotiation_sessions`: current state for one `session_id` + `load_id`
+- `negotiation_events`: append-only event history for auditability
+
+## Reporting Endpoint
+
+After the HappyRobot Extract step and after writing carrier memory to Twin, the workflow should call:
+
+```text
+POST /reporting/call
+```
+
+Example body:
+
+```json
+{
+  "session_id": "call-123",
+  "mc_number": "MC-123456",
+  "carrier_name": "B MARRON LOGISTICS LLC",
+  "load_id": "L1001",
+  "origin": "Chicago, IL",
+  "destination": "Dallas, TX",
+  "equipment_type": "Dry Van",
+  "offered_rate": 1700,
+  "carrier_requested_rate": 1900,
+  "final_rate": 1850,
+  "outcome": "booked",
+  "summary": "Carrier booked Chicago to Dallas dry van at $1850 after one counter.",
+  "mood": "Friendly",
+  "letterboard_rate": 1850,
+  "last_offered_rate": 1850,
+  "call_duration_seconds": 210,
+  "negotiation_rounds": 2,
+  "tool_call_count": 8,
+  "call_status": "completed",
+  "call_end_event": "agent_ended",
+  "transfer_completed": true
+}
+```
+
+Notes:
+
+- `letterboard_rate` is stored for dashboard pricing analytics.
+- `loadboard_rate` is also accepted as a backup field name.
+- `call_status` is the platform/run status, such as `completed`, `failed`, or `in-progress`.
+- `outcome` is the business result, such as `booked`, `rate_decline`, `no_match`, or `carrier_not_eligible`.
+- The endpoint upserts by `session_id`, so retries update the same call row instead of creating duplicates.
 
 ## Dashboard
 
-The operational dashboard is available at:
+Dashboard:
 
 ```text
-/dashboard
+GET /dashboard
 ```
 
-It summarizes the carrier sales call history captured during demo runs, including booking rate, rate declines, average booked rate, lane performance, recent calls, and follow-up opportunities.
+Data API:
 
-## Validation and Error Responses
+```text
+GET /dashboard-data
+```
+
+The dashboard shows a curated demo dataset plus any live rows written to `reporting_calls`. This keeps the dashboard useful for a recorded demo while still showing the most recent test call after the HappyRobot workflow runs.
+
+Use this URL for demo-only data:
+
+```text
+/dashboard?source=demo
+```
+
+Current dashboard metrics include:
+
+- Total calls
+- Booked loads
+- Average savings below pricing authority
+- Rate declines
+- Follow-up opportunities
+- Average handle time
+- Lane performance
+- Recent carrier calls
+- Negotiation outcomes
+
+## Demo Carrier
+
+`MC-123456` always returns an eligible carrier for demo stability if the FMCSA API is unavailable.
+
+## Docker
+
+The challenge asks for the solution to be containerized. Docker is not strictly required for Render to run the app, but it makes the runtime reproducible.
+
+```bash
+docker build -t happyrobot-carrier-sales .
+docker run --env-file .env -p 8000:8000 happyrobot-carrier-sales
+```
+
+## Deployment
+
+The API is deployed on Render from the GitHub repository. Render supplies HTTPS and redeploys from the `main` branch.
+
+When code changes are pushed to GitHub, Render redeploys the latest version. Because the app uses SQLite without a persistent disk, demo data is seeded at startup and reporting rows are treated as lightweight demo persistence rather than long-term storage.
+
+## Error Responses
 
 Business errors return structured JSON so the HappyRobot agent can explain what went wrong and recover in conversation.
 
@@ -155,14 +282,3 @@ Example:
 ```
 
 Validation errors use `error_code: "VALIDATION_ERROR"` and include field-level details.
-
-## Demo Carrier
-
-`MC-123456` always returns an eligible carrier for demo stability if the FMCSA API is unavailable.
-
-## Docker
-
-```bash
-docker build -t happyrobot-carrier-sales .
-docker run --env-file .env -p 8000:8000 happyrobot-carrier-sales
-```
