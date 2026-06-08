@@ -118,6 +118,65 @@
     .content {
       grid-template-columns: 1.05fr 0.95fr;
       align-items: start;
+      margin-bottom: 16px;
+    }
+
+    .database-table {
+      width: 100%;
+      min-width: 0;
+      table-layout: fixed;
+    }
+
+    .database-table th,
+    .database-table td {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .database-table th:nth-child(1),
+    .database-table td:nth-child(1) { width: 92px; }
+
+    .database-table th:nth-child(2),
+    .database-table td:nth-child(2) { width: 170px; }
+
+    .database-table th:nth-child(3),
+    .database-table td:nth-child(3) { width: 64px; }
+
+    .database-table th:nth-child(4),
+    .database-table td:nth-child(4) { width: 175px; }
+
+    .database-table th:nth-child(5),
+    .database-table td:nth-child(5) { width: 86px; }
+
+    .database-table th:nth-child(6),
+    .database-table td:nth-child(6),
+    .database-table th:nth-child(9),
+    .database-table td:nth-child(9) { width: 72px; }
+
+    .database-table th:nth-child(7),
+    .database-table td:nth-child(7) { width: 92px; }
+
+    .database-table th:nth-child(8),
+    .database-table td:nth-child(8) { width: 98px; }
+
+    .database-table th:nth-child(10),
+    .database-table td:nth-child(10) { width: 106px; }
+
+    .database-table th:nth-child(11),
+    .database-table td:nth-child(11) { width: 340px; }
+
+    .summary-cell {
+      width: 340px;
+      max-width: 340px;
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+      line-height: 1.35;
+      color: #344054;
+    }
+
+    .nowrap {
+      white-space: nowrap;
     }
 
     .insights {
@@ -337,6 +396,10 @@
         min-width: 760px;
       }
 
+      .database-table {
+        min-width: 1500px;
+      }
+
       .bar-row {
         grid-template-columns: 1fr;
         gap: 6px;
@@ -364,28 +427,13 @@
     <section class="grid content">
       <div class="stack">
         <section class="panel">
-          <h2>Lane Performance</h2>
-          <div class="bars" id="lanePerformance"></div>
+          <h2>Workflow Health</h2>
+          <div class="bars" id="workflowHealth"></div>
         </section>
 
         <section class="panel">
-          <h2>Recent Carrier Calls</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Carrier</th>
-                <th>Load</th>
-                <th>Lane</th>
-                <th>Equipment</th>
-                <th class="num">Ask</th>
-                <th class="num">Last Offer</th>
-                <th class="num">Letterboard</th>
-                <th>Outcome</th>
-                <th>Mood</th>
-              </tr>
-            </thead>
-            <tbody id="recentCalls"></tbody>
-          </table>
+          <h2>Negotiation Outcomes</h2>
+          <div class="bars" id="pricingMix"></div>
         </section>
       </div>
 
@@ -394,12 +442,29 @@
           <h2>Follow-Up Opportunities</h2>
           <div class="opportunities" id="opportunities"></div>
         </section>
-
-        <section class="panel">
-          <h2>Negotiation Outcomes</h2>
-          <div class="bars" id="pricingMix"></div>
-        </section>
       </div>
+    </section>
+
+    <section class="panel">
+      <h2>Call Database</h2>
+      <table class="database-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Carrier / MC</th>
+            <th>Load</th>
+            <th>Lane</th>
+            <th>Equipment</th>
+            <th class="num">Ask</th>
+            <th class="num">Last Offer</th>
+            <th class="num">Letterboard</th>
+            <th class="num">Final</th>
+            <th>Outcome</th>
+            <th>Summary</th>
+          </tr>
+        </thead>
+        <tbody id="callDatabase"></tbody>
+      </table>
     </section>
   </main>
 
@@ -737,6 +802,8 @@
       destination: call.destination || "Unknown destination",
       equipment_type: call.equipment_type || "-",
       summary: call.summary || "No summary captured.",
+      call_status: call.call_status || "-",
+      call_end_event: call.call_end_event || "-",
       created_at: call.created_at || new Date().toISOString(),
       call_duration_seconds: toNumber(call.call_duration_seconds),
       negotiation_rounds: toNumber(call.negotiation_rounds),
@@ -758,6 +825,13 @@
     };
 
     const percent = (value) => `${Math.round(value * 100)}%`;
+
+    const shortDateTime = (value) => {
+      if (!value) return "-";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "-";
+      return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(date);
+    };
 
     const isBooked = (call) => {
       const outcome = String(call.outcome || "").toLowerCase();
@@ -858,32 +932,49 @@
         </article>
       `).join("");
 
-      const laneGroups = new Map();
-      for (const call of calls) {
-        const key = laneKey(call);
-        if (!laneGroups.has(key)) {
-          laneGroups.set(key, { lane: key, equipment: call.equipment_type, calls: [], booked: 0 });
+      const workflowChecks = [
+        {
+          label: "Carrier identified",
+          passed: calls.filter((call) => call.carrier_name && call.carrier_name !== "Unknown carrier").length,
+          total: calls.length,
+          note: "Carrier name captured from verification flow"
+        },
+        {
+          label: "Load search resolved",
+          passed: calls.filter((call) => call.load_id || String(call.outcome).toLowerCase().includes("no_match") || String(call.outcome).toLowerCase().includes("eligible")).length,
+          total: calls.length,
+          note: "Found a load, ended as no-match, or stopped on eligibility"
+        },
+        {
+          label: "Pricing guidance used",
+          passed: calls.filter((call) => call.last_offered_rate || ["no_match", "carrier_not_eligible"].includes(String(call.outcome).toLowerCase())).length,
+          total: calls.length,
+          note: "Rate calls have an agent offer; no-load and ineligible calls bypass pricing"
+        },
+        {
+          label: "Booked calls transferred",
+          passed: booked.filter((call) => call.transfer_completed).length,
+          total: booked.length,
+          note: "Booked loads reached final handoff"
+        },
+        {
+          label: "No-match calls closed",
+          passed: calls.filter((call) => String(call.outcome).toLowerCase().includes("no_match") && !call.transfer_completed && !call.last_offered_rate).length,
+          total: calls.filter((call) => String(call.outcome).toLowerCase().includes("no_match")).length,
+          note: "No-load calls ended without pricing or transfer"
         }
-        const group = laneGroups.get(key);
-        group.calls.push(call);
-        if (isBooked(call)) group.booked += 1;
-      }
+      ];
 
-      const laneRows = [...laneGroups.values()]
-        .sort((a, b) => b.calls.length - a.calls.length);
-      const maxLaneCalls = Math.max(...laneRows.map((row) => row.calls.length), 1);
-
-      document.getElementById("lanePerformance").innerHTML = laneRows.map((row) => {
-        const bookingRate = row.booked / row.calls.length;
-        const width = Math.max(8, (row.calls.length / maxLaneCalls) * 100);
+      document.getElementById("workflowHealth").innerHTML = workflowChecks.map((row) => {
+        const width = row.total ? Math.max(5, (row.passed / row.total) * 100) : 0;
         return `
           <div class="bar-row">
             <div>
-              <div class="lane">${row.lane}</div>
-              <div class="subtle">${row.equipment} · ${row.calls.length} calls · ${percent(bookingRate)} booked</div>
+              <div class="lane">${row.label}</div>
+              <div class="subtle">${row.note}</div>
             </div>
-            <div class="bar-track"><div class="bar-fill" style="width:${width}%"></div></div>
-            <div class="num">${row.booked}/${row.calls.length}</div>
+            <div class="bar-track"><div class="bar-fill secondary" style="width:${width}%"></div></div>
+            <div class="num">${row.passed}/${row.total}</div>
           </div>
         `;
       }).join("");
@@ -930,24 +1021,26 @@
         `;
       }).join("");
 
-      document.getElementById("recentCalls").innerHTML = sorted.slice(0, 8).map((call) => {
+      document.getElementById("callDatabase").innerHTML = sorted.map((call) => {
         const outcomeClass = isBooked(call) ? "pill-booked" : "pill-decline";
-        const moodClass = call.mood === "Hostile" ? "pill-hostile" : "pill-friendly";
+        const moodClass = call.mood === "Hostile" ? "pill-hostile" : call.mood === "Neutral" ? "pill-decline" : "pill-friendly";
         const outcome = displayOutcome(call);
         return `
           <tr>
+            <td class="nowrap">${shortDateTime(call.created_at)}</td>
             <td>
               <div class="lane">${call.carrier_name}</div>
               <div class="subtle">${call.mc_number}</div>
             </td>
-            <td>${call.load_id || "-"}</td>
+            <td class="nowrap">${call.load_id || "-"}</td>
             <td>${laneKey(call)}</td>
             <td>${call.equipment_type}</td>
             <td class="num">${validAsk(call) ? money(call.carrier_requested_rate) : "-"}</td>
             <td class="num">${money(call.last_offered_rate)}</td>
             <td class="num">${money(call.letterboard_rate)}</td>
+            <td class="num">${money(call.final_rate)}</td>
             <td><span class="pill ${outcomeClass}">${outcome}</span></td>
-            <td><span class="pill ${moodClass}">${call.mood}</span></td>
+            <td class="summary-cell">${call.summary}</td>
           </tr>
         `;
       }).join("");
