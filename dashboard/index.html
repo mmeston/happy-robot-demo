@@ -323,7 +323,7 @@
         <div class="subtitle">Inbound call performance, pricing outcomes, and follow-up opportunities.</div>
       </div>
       <div class="stamp">
-        HappyRobot Twin snapshot<br>
+        <span id="dataSource">HappyRobot Twin</span><br>
         <span id="lastUpdated"></span>
       </div>
     </header>
@@ -371,7 +371,7 @@
   </main>
 
   <script>
-    const calls = [
+    const fallbackCalls = [
       {
         session_id: "d352ea3c-7c05-4302-bb59-8559b8e8803c",
         mc_number: "MC-654321",
@@ -572,6 +572,31 @@
       }
     ];
 
+    const toNumber = (value) => {
+      if (value === null || value === undefined || value === "") return null;
+      if (String(value).toLowerCase() === "null") return null;
+      const parsed = Number(value);
+      return Number.isNaN(parsed) ? null : parsed;
+    };
+
+    const normalizeCall = (call) => ({
+      ...call,
+      offered_rate: toNumber(call.offered_rate),
+      carrier_requested_rate: toNumber(call.carrier_requested_rate),
+      final_rate: toNumber(call.final_rate),
+      letterboard_rate: toNumber(call.letterboard_rate || call.loadboard_rate),
+      last_offered_rate: toNumber(call.last_offered_rate),
+      outcome: call.outcome || "Unknown",
+      mood: call.mood || "Unknown",
+      carrier_name: call.carrier_name || "Unknown carrier",
+      mc_number: call.mc_number || "-",
+      origin: call.origin || "Unknown origin",
+      destination: call.destination || "Unknown destination",
+      equipment_type: call.equipment_type || "-",
+      summary: call.summary || "No summary captured.",
+      created_at: call.created_at || new Date().toISOString()
+    });
+
     const money = (value) => {
       if (value === null || value === undefined || Number.isNaN(Number(value))) return "-";
       return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(Number(value));
@@ -579,14 +604,13 @@
 
     const percent = (value) => `${Math.round(value * 100)}%`;
 
-    const isBooked = (call) => String(call.outcome || "").toLowerCase().includes("sucess") || call.final_rate !== null;
+    const isBooked = (call) => {
+      const outcome = String(call.outcome || "").toLowerCase();
+      return outcome.includes("sucess") || outcome.includes("success") || outcome.includes("booked") || call.final_rate !== null;
+    };
     const isRateDecline = (call) => String(call.outcome || "").toLowerCase().includes("rate");
     const validAsk = (call) => Number(call.carrier_requested_rate) > 0 && Number(call.carrier_requested_rate) < 10000;
     const laneKey = (call) => `${call.origin} -> ${call.destination}`;
-    const sorted = [...calls].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    const booked = calls.filter(isBooked);
-    const declines = calls.filter(isRateDecline);
-    const validGapCalls = calls.filter((call) => validAsk(call) && call.last_offered_rate);
 
     const avg = (items, pick) => {
       const values = items.map(pick).filter((value) => value !== null && value !== undefined && !Number.isNaN(Number(value)));
@@ -594,121 +618,147 @@
       return values.reduce((sum, value) => sum + Number(value), 0) / values.length;
     };
 
-    const avgGap = avg(validGapCalls, (call) => Number(call.carrier_requested_rate) - Number(call.last_offered_rate));
-    const avgBookedRate = avg(booked, (call) => call.final_rate);
-    const friendly = calls.filter((call) => call.mood === "Friendly").length;
-    const hostile = calls.filter((call) => call.mood === "Hostile").length;
+    function renderDashboard(rawCalls, sourceLabel) {
+      const calls = rawCalls.map(normalizeCall);
+      const sorted = [...calls].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      const booked = calls.filter(isBooked);
+      const declines = calls.filter(isRateDecline);
+      const validGapCalls = calls.filter((call) => validAsk(call) && call.last_offered_rate);
+      const avgGap = avg(validGapCalls, (call) => Number(call.carrier_requested_rate) - Number(call.last_offered_rate));
+      const avgBookedRate = avg(booked, (call) => call.final_rate);
+      const friendly = calls.filter((call) => call.mood === "Friendly").length;
+      const hostile = calls.filter((call) => call.mood === "Hostile").length;
 
-    document.getElementById("lastUpdated").textContent =
-      new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(sorted[0].created_at));
+      document.getElementById("dataSource").textContent = sourceLabel;
+      document.getElementById("lastUpdated").textContent = sorted.length
+        ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(sorted[0].created_at))
+        : "No calls captured yet";
 
-    const metricItems = [
-      ["Total Calls", calls.length, "Twin call history rows"],
-      ["Booked Loads", booked.length, `${percent(booked.length / calls.length)} booking rate`],
-      ["Rate Declines", declines.length, "Carrier ask exceeded authority"],
-      ["Avg Booked Rate", money(avgBookedRate), "Accepted loads only"],
-      ["Avg Gap To Book", money(avgGap), "Carrier ask minus last offer"],
-      ["Mood Split", `${friendly}/${hostile}`, "Friendly / Hostile"]
-    ];
+      const metricItems = [
+        ["Total Calls", calls.length, "Carrier call history rows"],
+        ["Booked Loads", booked.length, `${calls.length ? percent(booked.length / calls.length) : "0%"} booking rate`],
+        ["Rate Declines", declines.length, "Carrier ask exceeded authority"],
+        ["Avg Booked Rate", money(avgBookedRate), "Accepted loads only"],
+        ["Avg Gap To Book", money(avgGap), "Carrier ask minus last offer"],
+        ["Mood Split", `${friendly}/${hostile}`, "Friendly / Hostile"]
+      ];
 
-    document.getElementById("metrics").innerHTML = metricItems.map(([label, value, note]) => `
-      <article class="metric">
-        <div class="metric-label">${label}</div>
-        <div class="metric-value">${value}</div>
-        <div class="metric-note">${note}</div>
-      </article>
-    `).join("");
+      document.getElementById("metrics").innerHTML = metricItems.map(([label, value, note]) => `
+        <article class="metric">
+          <div class="metric-label">${label}</div>
+          <div class="metric-value">${value}</div>
+          <div class="metric-note">${note}</div>
+        </article>
+      `).join("");
 
-    const laneGroups = new Map();
-    for (const call of calls) {
-      const key = laneKey(call);
-      if (!laneGroups.has(key)) {
-        laneGroups.set(key, { lane: key, equipment: call.equipment_type, calls: [], booked: 0 });
+      const laneGroups = new Map();
+      for (const call of calls) {
+        const key = laneKey(call);
+        if (!laneGroups.has(key)) {
+          laneGroups.set(key, { lane: key, equipment: call.equipment_type, calls: [], booked: 0 });
+        }
+        const group = laneGroups.get(key);
+        group.calls.push(call);
+        if (isBooked(call)) group.booked += 1;
       }
-      const group = laneGroups.get(key);
-      group.calls.push(call);
-      if (isBooked(call)) group.booked += 1;
+
+      const laneRows = [...laneGroups.values()]
+        .sort((a, b) => b.calls.length - a.calls.length);
+      const maxLaneCalls = Math.max(...laneRows.map((row) => row.calls.length), 1);
+
+      document.getElementById("lanePerformance").innerHTML = laneRows.map((row) => {
+        const bookingRate = row.booked / row.calls.length;
+        const width = Math.max(8, (row.calls.length / maxLaneCalls) * 100);
+        return `
+          <div class="bar-row">
+            <div>
+              <div class="lane">${row.lane}</div>
+              <div class="subtle">${row.equipment} · ${row.calls.length} calls · ${percent(bookingRate)} booked</div>
+            </div>
+            <div class="bar-track"><div class="bar-fill" style="width:${width}%"></div></div>
+            <div class="num">${row.booked}/${row.calls.length}</div>
+          </div>
+        `;
+      }).join("");
+
+      const followUps = declines
+        .filter((call) => validAsk(call) && call.last_offered_rate)
+        .map((call) => ({
+          ...call,
+          gap: Number(call.carrier_requested_rate) - Number(call.last_offered_rate)
+        }))
+        .sort((a, b) => a.gap - b.gap)
+        .slice(0, 5);
+
+      document.getElementById("opportunities").innerHTML = followUps.length ? followUps.map((call) => {
+        const priority = call.gap <= 250 ? "Hot" : call.gap <= 500 ? "Warm" : "Monitor";
+        return `
+          <div class="opportunity">
+            <div>
+              <div class="lane">${call.carrier_name}</div>
+              <div class="subtle">${laneKey(call)} · ${call.equipment_type} · ${priority} follow-up</div>
+              <div class="summary">${call.summary}</div>
+            </div>
+            <div class="gap">${money(call.gap)} gap</div>
+          </div>
+        `;
+      }).join("") : "<div class=\"subtle\">No rate-decline follow-up opportunities yet.</div>";
+
+      const pricingRows = [
+        ["Booked below authority", booked.filter((call) => call.final_rate < call.letterboard_rate).length, booked.length, "secondary"],
+        ["Booked at authority", booked.filter((call) => call.final_rate >= call.letterboard_rate).length, booked.length, ""],
+        ["Declined at authority", declines.filter((call) => call.last_offered_rate >= call.letterboard_rate).length, declines.length, ""],
+        ["Hostile calls", hostile, calls.length, "secondary"]
+      ];
+
+      document.getElementById("pricingMix").innerHTML = pricingRows.map(([label, value, total, tone]) => {
+        const width = total ? Math.max(5, (value / total) * 100) : 0;
+        return `
+          <div class="bar-row">
+            <div class="lane">${label}</div>
+            <div class="bar-track"><div class="bar-fill ${tone}" style="width:${width}%"></div></div>
+            <div class="num">${value}/${total}</div>
+          </div>
+        `;
+      }).join("");
+
+      document.getElementById("recentCalls").innerHTML = sorted.slice(0, 8).map((call) => {
+        const outcomeClass = isBooked(call) ? "pill-booked" : "pill-decline";
+        const moodClass = call.mood === "Hostile" ? "pill-hostile" : "pill-friendly";
+        const outcome = isBooked(call) ? "Booked" : "Rate decline";
+        return `
+          <tr>
+            <td>
+              <div class="lane">${call.carrier_name}</div>
+              <div class="subtle">${call.mc_number}</div>
+            </td>
+            <td>${laneKey(call)}</td>
+            <td>${call.equipment_type}</td>
+            <td class="num">${validAsk(call) ? money(call.carrier_requested_rate) : "Outlier"}</td>
+            <td class="num">${money(call.last_offered_rate)}</td>
+            <td><span class="pill ${outcomeClass}">${outcome}</span></td>
+            <td><span class="pill ${moodClass}">${call.mood}</span></td>
+          </tr>
+        `;
+      }).join("");
     }
 
-    const laneRows = [...laneGroups.values()]
-      .sort((a, b) => b.calls.length - a.calls.length);
-    const maxLaneCalls = Math.max(...laneRows.map((row) => row.calls.length));
+    async function loadDashboard() {
+      try {
+        const response = await fetch("/dashboard-data", { headers: { "Accept": "application/json" } });
+        if (!response.ok) throw new Error(`Dashboard data returned ${response.status}`);
+        const payload = await response.json();
+        if (payload.rows && payload.rows.length) {
+          renderDashboard(payload.rows, "HappyRobot Twin live data");
+          return;
+        }
+        renderDashboard(fallbackCalls, "Demo fallback snapshot");
+      } catch (error) {
+        renderDashboard(fallbackCalls, "Demo fallback snapshot");
+      }
+    }
 
-    document.getElementById("lanePerformance").innerHTML = laneRows.map((row) => {
-      const bookingRate = row.booked / row.calls.length;
-      const width = Math.max(8, (row.calls.length / maxLaneCalls) * 100);
-      return `
-        <div class="bar-row">
-          <div>
-            <div class="lane">${row.lane}</div>
-            <div class="subtle">${row.equipment} · ${row.calls.length} calls · ${percent(bookingRate)} booked</div>
-          </div>
-          <div class="bar-track"><div class="bar-fill" style="width:${width}%"></div></div>
-          <div class="num">${row.booked}/${row.calls.length}</div>
-        </div>
-      `;
-    }).join("");
-
-    const followUps = declines
-      .filter((call) => validAsk(call) && call.last_offered_rate)
-      .map((call) => ({
-        ...call,
-        gap: Number(call.carrier_requested_rate) - Number(call.last_offered_rate)
-      }))
-      .sort((a, b) => a.gap - b.gap)
-      .slice(0, 5);
-
-    document.getElementById("opportunities").innerHTML = followUps.map((call) => {
-      const priority = call.gap <= 250 ? "Hot" : call.gap <= 500 ? "Warm" : "Monitor";
-      return `
-        <div class="opportunity">
-          <div>
-            <div class="lane">${call.carrier_name}</div>
-            <div class="subtle">${laneKey(call)} · ${call.equipment_type} · ${priority} follow-up</div>
-            <div class="summary">${call.summary}</div>
-          </div>
-          <div class="gap">${money(call.gap)} gap</div>
-        </div>
-      `;
-    }).join("");
-
-    const pricingRows = [
-      ["Booked below authority", booked.filter((call) => call.final_rate < call.letterboard_rate).length, booked.length, "secondary"],
-      ["Booked at authority", booked.filter((call) => call.final_rate >= call.letterboard_rate).length, booked.length, ""],
-      ["Declined at authority", declines.filter((call) => call.last_offered_rate >= call.letterboard_rate).length, declines.length, ""],
-      ["Hostile calls", hostile, calls.length, "secondary"]
-    ];
-
-    document.getElementById("pricingMix").innerHTML = pricingRows.map(([label, value, total, tone]) => {
-      const width = total ? Math.max(5, (value / total) * 100) : 0;
-      return `
-        <div class="bar-row">
-          <div class="lane">${label}</div>
-          <div class="bar-track"><div class="bar-fill ${tone}" style="width:${width}%"></div></div>
-          <div class="num">${value}/${total}</div>
-        </div>
-      `;
-    }).join("");
-
-    document.getElementById("recentCalls").innerHTML = sorted.slice(0, 8).map((call) => {
-      const outcomeClass = isBooked(call) ? "pill-booked" : "pill-decline";
-      const moodClass = call.mood === "Hostile" ? "pill-hostile" : "pill-friendly";
-      const outcome = isBooked(call) ? "Booked" : "Rate decline";
-      return `
-        <tr>
-          <td>
-            <div class="lane">${call.carrier_name}</div>
-            <div class="subtle">${call.mc_number}</div>
-          </td>
-          <td>${laneKey(call)}</td>
-          <td>${call.equipment_type}</td>
-          <td class="num">${validAsk(call) ? money(call.carrier_requested_rate) : "Outlier"}</td>
-          <td class="num">${money(call.last_offered_rate)}</td>
-          <td><span class="pill ${outcomeClass}">${outcome}</span></td>
-          <td><span class="pill ${moodClass}">${call.mood}</span></td>
-        </tr>
-      `;
-    }).join("");
+    loadDashboard();
   </script>
 </body>
 </html>

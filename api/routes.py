@@ -3,7 +3,9 @@ from pathlib import Path
 from typing import Optional
 from fastapi import APIRouter, Query
 from fastapi.responses import FileResponse
+import requests
 
+from api.config import TWIN_API_KEY, TWIN_GATEWAY_URL, TWIN_ORG_ID, TWIN_TABLE_NAME
 from api.database import db_connection
 from api.errors import raise_tool_error
 from api.models import (
@@ -34,6 +36,70 @@ def health():
 def dashboard():
     dashboard_path = Path(__file__).resolve().parent.parent / "dashboard" / "index.html"
     return FileResponse(dashboard_path)
+
+
+@router.get("/dashboard-data", include_in_schema=False)
+def dashboard_data():
+    if not TWIN_GATEWAY_URL:
+        return {
+            "source": "fallback",
+            "configured": False,
+            "rows": [],
+            "message": "TWIN_GATEWAY_URL is not configured.",
+        }
+
+    headers = {}
+    if TWIN_ORG_ID:
+        headers["x-org-id"] = TWIN_ORG_ID
+    if TWIN_API_KEY:
+        headers["Authorization"] = f"Bearer {TWIN_API_KEY}"
+        headers["x-api-key"] = TWIN_API_KEY
+
+    base_url = TWIN_GATEWAY_URL.rstrip("/")
+    path = f"/twin/tables/{TWIN_TABLE_NAME}/rows"
+    url = f"{base_url}{path}"
+
+    try:
+        response = requests.get(
+            url,
+            headers=headers,
+            params={"limit": 500},
+            timeout=10,
+        )
+        if response.status_code == 404:
+            response = requests.get(
+                f"{base_url}/tables/{TWIN_TABLE_NAME}/rows",
+                headers=headers,
+                params={"limit": 500},
+                timeout=10,
+            )
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        return {
+            "source": "fallback",
+            "configured": True,
+            "rows": [],
+            "message": f"Unable to read Twin rows: {exc}",
+        }
+
+    payload = response.json()
+    if isinstance(payload, list):
+        rows = payload
+    elif isinstance(payload, dict):
+        rows = (
+            payload.get("rows")
+            or payload.get("data")
+            or payload.get("result")
+            or []
+        )
+    else:
+        rows = []
+
+    return {
+        "source": "twin",
+        "configured": True,
+        "rows": rows,
+    }
 
 
 @router.get("/loads")

@@ -9,7 +9,14 @@ from api.errors import error_payload
 from api.routes import router
 
 
-PUBLIC_PATHS = {"/health", "/docs", "/openapi.json", "/redoc", "/dashboard"}
+PUBLIC_PATHS = {
+    "/health",
+    "/docs",
+    "/openapi.json",
+    "/redoc",
+    "/dashboard",
+    "/dashboard-data",
+}
 
 
 def create_app() -> FastAPI:
