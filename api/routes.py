@@ -1,6 +1,8 @@
 import json
+from pathlib import Path
 from typing import Optional
 from fastapi import APIRouter, Query
+from fastapi.responses import FileResponse
 
 from api.database import db_connection
 from api.errors import raise_tool_error
@@ -26,6 +28,12 @@ router = APIRouter()
 @router.get("/health")
 def health():
     return {"status": "healthy"}
+
+
+@router.get("/dashboard", include_in_schema=False)
+def dashboard():
+    dashboard_path = Path(__file__).resolve().parent.parent / "dashboard" / "index.html"
+    return FileResponse(dashboard_path)
 
 
 @router.get("/loads")

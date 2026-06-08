@@ -36,6 +36,7 @@ x-api-key: your_shared_secret
 ## Core Endpoints
 
 - `GET /health`
+- `GET /dashboard`
 - `GET /loads`
 - `GET /loads/search?origin=Chicago&destination=Dallas&equipment_type=Dry%20Van`
 - `GET /loads/searchbyid?id=L1001`
@@ -124,6 +125,16 @@ Rejection decision:
 The backend uses `session_id` and `load_id` to track negotiation history per load.
 `check-bid` records the carrier's latest offer and tells Nancy whether it can be accepted.
 `update-status` validates Nancy's final decision before updating the current session and event history.
+
+## Dashboard
+
+The operational dashboard is available at:
+
+```text
+/dashboard
+```
+
+It summarizes the carrier sales call history captured during demo runs, including booking rate, rate declines, average booked rate, lane performance, recent calls, and follow-up opportunities.
 
 ## Validation and Error Responses
 
