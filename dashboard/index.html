@@ -120,9 +120,34 @@
       align-items: start;
     }
 
+    .insights {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-bottom: 16px;
+    }
+
     .panel {
       padding: 18px;
       overflow: hidden;
+    }
+
+    .insight-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+    }
+
+    .insight-title {
+      font-size: 18px;
+      font-weight: 760;
+      margin-bottom: 6px;
+    }
+
+    .insight-copy {
+      color: #344054;
+      font-size: 13px;
     }
 
     .stack {
@@ -279,6 +304,10 @@
       .content {
         grid-template-columns: 1fr;
       }
+
+      .insights {
+        grid-template-columns: 1fr;
+      }
     }
 
     @media (max-width: 720px) {
@@ -330,6 +359,8 @@
 
     <section class="grid metrics" id="metrics"></section>
 
+    <section class="grid insights" id="opsBrief"></section>
+
     <section class="grid content">
       <div class="stack">
         <section class="panel">
@@ -363,7 +394,7 @@
         </section>
 
         <section class="panel">
-          <h2>Pricing Mix</h2>
+          <h2>Negotiation Outcomes</h2>
           <div class="bars" id="pricingMix"></div>
         </section>
       </div>
@@ -572,6 +603,261 @@
       }
     ];
 
+    const demoCalls = [
+      {
+        session_id: "demo-001",
+        mc_number: "MC-123456",
+        carrier_name: "B MARRON LOGISTICS LLC",
+        load_id: "L1001",
+        origin: "Chicago, IL",
+        destination: "Dallas, TX",
+        equipment_type: "Dry Van",
+        offered_rate: 1700,
+        carrier_requested_rate: 1800,
+        final_rate: 1800,
+        outcome: "booked",
+        summary: "B Marron booked Chicago to Dallas dry van at $1800 after Paul opened at $1700.",
+        created_at: "2026-06-07T20:02:00Z",
+        mood: "Friendly",
+        letterboard_rate: 1850,
+        last_offered_rate: 1800
+      },
+      {
+        session_id: "demo-002",
+        mc_number: "MC-654321",
+        carrier_name: "ANG TRANSPORT INC",
+        load_id: "L1002",
+        origin: "Detroit, MI",
+        destination: "Atlanta, GA",
+        equipment_type: "Reefer",
+        offered_rate: 1950,
+        carrier_requested_rate: 2100,
+        final_rate: 2050,
+        outcome: "booked",
+        summary: "ANG Transport accepted Detroit to Atlanta reefer at $2050, $50 under listed authority.",
+        created_at: "2026-06-07T20:16:00Z",
+        mood: "Friendly",
+        letterboard_rate: 2100,
+        last_offered_rate: 2050
+      },
+      {
+        session_id: "demo-003",
+        mc_number: "MC-123456",
+        carrier_name: "B MARRON LOGISTICS LLC",
+        load_id: "L1001",
+        origin: "Chicago, IL",
+        destination: "Dallas, TX",
+        equipment_type: "Dry Van",
+        offered_rate: 1750,
+        carrier_requested_rate: 1950,
+        final_rate: null,
+        outcome: "declined_rate",
+        summary: "Carrier wanted $1950 on Chicago to Dallas; Paul held at $1850 and the carrier declined.",
+        created_at: "2026-06-07T20:31:00Z",
+        mood: "Friendly",
+        letterboard_rate: 1850,
+        last_offered_rate: 1850
+      },
+      {
+        session_id: "demo-004",
+        mc_number: "MC-222333",
+        carrier_name: "NORTHSTAR CARRIER GROUP",
+        load_id: "L1003",
+        origin: "Dallas, TX",
+        destination: "Phoenix, AZ",
+        equipment_type: "Dry Van",
+        offered_rate: 1650,
+        carrier_requested_rate: 1700,
+        final_rate: 1700,
+        outcome: "booked",
+        summary: "Northstar booked Dallas to Phoenix dry van at $1700 after a small counter.",
+        created_at: "2026-06-07T20:44:00Z",
+        mood: "Friendly",
+        letterboard_rate: 1750,
+        last_offered_rate: 1700
+      },
+      {
+        session_id: "demo-005",
+        mc_number: "MC-789111",
+        carrier_name: "RIVER CITY TRUCKING",
+        load_id: "L1004",
+        origin: "Atlanta, GA",
+        destination: "Columbus, OH",
+        equipment_type: "Flatbed",
+        offered_rate: 2200,
+        carrier_requested_rate: 2900,
+        final_rate: null,
+        outcome: "declined_rate",
+        summary: "Carrier asked $2900 for Atlanta to Columbus flatbed; Nancy held at $2350 and the carrier passed.",
+        created_at: "2026-06-07T21:03:00Z",
+        mood: "Neutral",
+        letterboard_rate: 2350,
+        last_offered_rate: 2350
+      },
+      {
+        session_id: "demo-006",
+        mc_number: "MC-456789",
+        carrier_name: "LAKEVIEW EXPRESS",
+        load_id: "L1005",
+        origin: "Milwaukee, WI",
+        destination: "Grand Rapids, MI",
+        equipment_type: "Reefer",
+        offered_rate: 1450,
+        carrier_requested_rate: 1500,
+        final_rate: 1500,
+        outcome: "booked",
+        summary: "Lakeview accepted a Milwaukee to Grand Rapids reefer load at $1500.",
+        created_at: "2026-06-07T21:15:00Z",
+        mood: "Friendly",
+        letterboard_rate: 1580,
+        last_offered_rate: 1500
+      },
+      {
+        session_id: "demo-007",
+        mc_number: "MC-808080",
+        carrier_name: "PRAIRIE STAR LOGISTICS",
+        load_id: "L1006",
+        origin: "Boise, ID",
+        destination: "Sacramento, CA",
+        equipment_type: "Flatbed",
+        offered_rate: 2450,
+        carrier_requested_rate: 3100,
+        final_rate: null,
+        outcome: "declined_rate",
+        summary: "Carrier requested $3100 on Boise to Sacramento flatbed; Paul reached $2600 and the carrier declined.",
+        created_at: "2026-06-07T21:28:00Z",
+        mood: "Hostile",
+        letterboard_rate: 2600,
+        last_offered_rate: 2600
+      },
+      {
+        session_id: "demo-008",
+        mc_number: "MC-654321",
+        carrier_name: "ANG TRANSPORT INC",
+        load_id: "L1002",
+        origin: "Detroit, MI",
+        destination: "Atlanta, GA",
+        equipment_type: "Reefer",
+        offered_rate: 2000,
+        carrier_requested_rate: 2200,
+        final_rate: null,
+        outcome: "declined_rate",
+        summary: "Repeat carrier on Detroit to Atlanta wanted $2200; Nancy held at $2100, creating a close follow-up opportunity.",
+        created_at: "2026-06-07T21:43:00Z",
+        mood: "Friendly",
+        letterboard_rate: 2100,
+        last_offered_rate: 2100
+      },
+      {
+        session_id: "demo-009",
+        mc_number: "MC-333444",
+        carrier_name: "SOUTHERN VAN LINES",
+        load_id: null,
+        origin: "Atlanta, GA",
+        destination: "Chicago, IL",
+        equipment_type: "Dry Van",
+        offered_rate: null,
+        carrier_requested_rate: null,
+        final_rate: null,
+        outcome: "no_match",
+        summary: "Carrier wanted Atlanta to Chicago dry van, but no matching load was available.",
+        created_at: "2026-06-07T21:56:00Z",
+        mood: "Neutral",
+        letterboard_rate: null,
+        last_offered_rate: null
+      },
+      {
+        session_id: "demo-010",
+        mc_number: "MC-999000",
+        carrier_name: "UNVERIFIED CARRIER LLC",
+        load_id: "L1001",
+        origin: "Chicago, IL",
+        destination: "Dallas, TX",
+        equipment_type: "Dry Van",
+        offered_rate: null,
+        carrier_requested_rate: null,
+        final_rate: null,
+        outcome: "carrier_not_eligible",
+        summary: "Carrier failed eligibility verification, so Paul ended the booking flow before quoting a rate.",
+        created_at: "2026-06-07T22:04:00Z",
+        mood: "Neutral",
+        letterboard_rate: 1850,
+        last_offered_rate: null
+      },
+      {
+        session_id: "demo-011",
+        mc_number: "MC-121212",
+        carrier_name: "CROSSROADS FREIGHT",
+        load_id: "L1007",
+        origin: "Cleveland, OH",
+        destination: "Charlotte, NC",
+        equipment_type: "Dry Van",
+        offered_rate: 1525,
+        carrier_requested_rate: 1600,
+        final_rate: 1580,
+        outcome: "booked",
+        summary: "Crossroads booked Cleveland to Charlotte dry van at $1580 after one counter.",
+        created_at: "2026-06-07T22:17:00Z",
+        mood: "Friendly",
+        letterboard_rate: 1650,
+        last_offered_rate: 1580
+      },
+      {
+        session_id: "demo-012",
+        mc_number: "MC-777888",
+        carrier_name: "BLUE RIDGE CARRIERS",
+        load_id: "L1008",
+        origin: "Cincinnati, OH",
+        destination: "Nashville, TN",
+        equipment_type: "Dry Van",
+        offered_rate: 1200,
+        carrier_requested_rate: null,
+        final_rate: null,
+        outcome: "not_interested",
+        summary: "Carrier heard the Cincinnati to Nashville load details and passed due to timing.",
+        created_at: "2026-06-07T22:31:00Z",
+        mood: "Friendly",
+        letterboard_rate: 1350,
+        last_offered_rate: 1200
+      },
+      {
+        session_id: "demo-013",
+        mc_number: "MC-222333",
+        carrier_name: "NORTHSTAR CARRIER GROUP",
+        load_id: "L1003",
+        origin: "Dallas, TX",
+        destination: "Phoenix, AZ",
+        equipment_type: "Dry Van",
+        offered_rate: 1650,
+        carrier_requested_rate: 1800,
+        final_rate: null,
+        outcome: "declined_rate",
+        summary: "Northstar came back for Dallas to Phoenix but wanted $1800; Paul held at $1750.",
+        created_at: "2026-06-07T22:44:00Z",
+        mood: "Friendly",
+        letterboard_rate: 1750,
+        last_offered_rate: 1750
+      },
+      {
+        session_id: "demo-014",
+        mc_number: "MC-555222",
+        carrier_name: "IRONWOOD TRANSPORT",
+        load_id: "L1004",
+        origin: "Atlanta, GA",
+        destination: "Columbus, OH",
+        equipment_type: "Flatbed",
+        offered_rate: 2250,
+        carrier_requested_rate: 2350,
+        final_rate: 2325,
+        outcome: "booked",
+        summary: "Ironwood booked Atlanta to Columbus flatbed at $2325, slightly below authority.",
+        created_at: "2026-06-07T23:02:00Z",
+        mood: "Neutral",
+        letterboard_rate: 2350,
+        last_offered_rate: 2325
+      }
+    ];
+
     const toNumber = (value) => {
       if (value === null || value === undefined || value === "") return null;
       if (String(value).toLowerCase() === "null") return null;
@@ -611,6 +897,15 @@
     const isRateDecline = (call) => String(call.outcome || "").toLowerCase().includes("rate");
     const validAsk = (call) => Number(call.carrier_requested_rate) > 0 && Number(call.carrier_requested_rate) < 10000;
     const laneKey = (call) => `${call.origin} -> ${call.destination}`;
+    const displayOutcome = (call) => {
+      const outcome = String(call.outcome || "").toLowerCase();
+      if (isBooked(call)) return "Booked";
+      if (outcome.includes("rate")) return "Rate decline";
+      if (outcome.includes("no_match")) return "No match";
+      if (outcome.includes("eligible")) return "Not eligible";
+      if (outcome.includes("not_interested")) return "Passed";
+      return call.outcome || "Unknown";
+    };
 
     const avg = (items, pick) => {
       const values = items.map(pick).filter((value) => value !== null && value !== undefined && !Number.isNaN(Number(value)));
@@ -623,11 +918,27 @@
       const sorted = [...calls].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       const booked = calls.filter(isBooked);
       const declines = calls.filter(isRateDecline);
-      const validGapCalls = calls.filter((call) => validAsk(call) && call.last_offered_rate);
-      const avgGap = avg(validGapCalls, (call) => Number(call.carrier_requested_rate) - Number(call.last_offered_rate));
-      const avgBookedRate = avg(booked, (call) => call.final_rate);
+      const avgSavings = avg(booked, (call) => {
+        if (!call.letterboard_rate || !call.final_rate) return null;
+        return Number(call.letterboard_rate) - Number(call.final_rate);
+      });
       const friendly = calls.filter((call) => call.mood === "Friendly").length;
+      const neutral = calls.filter((call) => call.mood === "Neutral").length;
       const hostile = calls.filter((call) => call.mood === "Hostile").length;
+      const followUpCandidates = declines
+        .filter((call) => validAsk(call) && call.last_offered_rate)
+        .map((call) => ({
+          ...call,
+          gap: Number(call.carrier_requested_rate) - Number(call.last_offered_rate)
+        }))
+        .filter((call) => call.gap > 0 && call.gap <= 500);
+      const closeFollowUps = followUpCandidates.filter((call) => call.gap <= 250).length;
+      const laneCounts = new Map();
+      for (const call of calls) {
+        const key = laneKey(call);
+        laneCounts.set(key, (laneCounts.get(key) || 0) + 1);
+      }
+      const topLane = [...laneCounts.entries()].sort((a, b) => b[1] - a[1])[0];
 
       document.getElementById("dataSource").textContent = sourceLabel;
       document.getElementById("lastUpdated").textContent = sorted.length
@@ -637,10 +948,10 @@
       const metricItems = [
         ["Total Calls", calls.length, "Carrier call history rows"],
         ["Booked Loads", booked.length, `${calls.length ? percent(booked.length / calls.length) : "0%"} booking rate`],
+        ["Avg Savings", money(avgSavings), "Booked rate below authority"],
         ["Rate Declines", declines.length, "Carrier ask exceeded authority"],
-        ["Avg Booked Rate", money(avgBookedRate), "Accepted loads only"],
-        ["Avg Gap To Book", money(avgGap), "Carrier ask minus last offer"],
-        ["Mood Split", `${friendly}/${hostile}`, "Friendly / Hostile"]
+        ["Follow-Ups", followUpCandidates.length, "Close gaps worth rep action"],
+        ["Sentiment Mix", `${friendly}/${neutral}/${hostile}`, "Friendly / Neutral / Hostile"]
       ];
 
       document.getElementById("metrics").innerHTML = metricItems.map(([label, value, note]) => `
@@ -648,6 +959,32 @@
           <div class="metric-label">${label}</div>
           <div class="metric-value">${value}</div>
           <div class="metric-note">${note}</div>
+        </article>
+      `).join("");
+
+      const opsBrief = [
+        [
+          "Demand Signal",
+          topLane ? `${topLane[0]} is hottest` : "No lane activity yet",
+          topLane ? `${topLane[1]} calls came in on this lane, so it is the first place a brokerage rep should watch capacity and price movement.` : "Calls will populate this read as the workflow writes rows."
+        ],
+        [
+          "Pricing Read",
+          avgSavings !== null ? `${money(avgSavings)} average savings` : "No booked savings yet",
+          booked.length ? `Booked loads are closing below listed authority on average, which shows Nancy is protecting margin while still converting freight.` : "Once loads book, this shows how much margin the agent preserved."
+        ],
+        [
+          "Rep Action",
+          `${followUpCandidates.length} follow-up targets`,
+          closeFollowUps ? `${closeFollowUps} declined calls were within $250 of the last offer. Those are warm callbacks before the load has to be reposted.` : "No close rate-decline callbacks are waiting right now."
+        ]
+      ];
+
+      document.getElementById("opsBrief").innerHTML = opsBrief.map(([label, title, copy]) => `
+        <article class="panel">
+          <div class="insight-label">${label}</div>
+          <div class="insight-title">${title}</div>
+          <div class="insight-copy">${copy}</div>
         </article>
       `).join("");
 
@@ -687,6 +1024,7 @@
           ...call,
           gap: Number(call.carrier_requested_rate) - Number(call.last_offered_rate)
         }))
+        .filter((call) => call.gap > 0)
         .sort((a, b) => a.gap - b.gap)
         .slice(0, 5);
 
@@ -725,7 +1063,7 @@
       document.getElementById("recentCalls").innerHTML = sorted.slice(0, 8).map((call) => {
         const outcomeClass = isBooked(call) ? "pill-booked" : "pill-decline";
         const moodClass = call.mood === "Hostile" ? "pill-hostile" : "pill-friendly";
-        const outcome = isBooked(call) ? "Booked" : "Rate decline";
+        const outcome = displayOutcome(call);
         return `
           <tr>
             <td>
@@ -744,6 +1082,12 @@
     }
 
     async function loadDashboard() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("source") !== "twin") {
+        renderDashboard(demoCalls, "Curated demo reporting dataset");
+        return;
+      }
+
       try {
         const response = await fetch("/dashboard-data", { headers: { "Accept": "application/json" } });
         if (!response.ok) throw new Error(`Dashboard data returned ${response.status}`);
@@ -752,9 +1096,9 @@
           renderDashboard(payload.rows, "HappyRobot Twin live data");
           return;
         }
-        renderDashboard(fallbackCalls, "Demo fallback snapshot");
+        renderDashboard(demoCalls, "Curated demo reporting dataset");
       } catch (error) {
-        renderDashboard(fallbackCalls, "Demo fallback snapshot");
+        renderDashboard(demoCalls, "Curated demo reporting dataset");
       }
     }
 
