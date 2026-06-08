@@ -374,10 +374,12 @@
             <thead>
               <tr>
                 <th>Carrier</th>
+                <th>Load</th>
                 <th>Lane</th>
                 <th>Equipment</th>
                 <th class="num">Ask</th>
                 <th class="num">Last Offer</th>
+                <th class="num">Letterboard</th>
                 <th>Outcome</th>
                 <th>Mood</th>
               </tr>
@@ -938,10 +940,12 @@
               <div class="lane">${call.carrier_name}</div>
               <div class="subtle">${call.mc_number}</div>
             </td>
+            <td>${call.load_id || "-"}</td>
             <td>${laneKey(call)}</td>
             <td>${call.equipment_type}</td>
-            <td class="num">${validAsk(call) ? money(call.carrier_requested_rate) : "Outlier"}</td>
+            <td class="num">${validAsk(call) ? money(call.carrier_requested_rate) : "-"}</td>
             <td class="num">${money(call.last_offered_rate)}</td>
+            <td class="num">${money(call.letterboard_rate)}</td>
             <td><span class="pill ${outcomeClass}">${outcome}</span></td>
             <td><span class="pill ${moodClass}">${call.mood}</span></td>
           </tr>
