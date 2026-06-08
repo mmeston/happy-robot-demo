@@ -232,17 +232,13 @@ Use this URL for demo-only data:
 /dashboard?source=demo
 ```
 
-Current dashboard metrics include:
+Current dashboard sections include:
 
-- Total calls
-- Booked loads
-- Average savings below pricing authority
-- Rate declines
-- Follow-up opportunities
-- Average handle time
-- Lane performance
-- Recent carrier calls
-- Negotiation outcomes
+- Top-level call metrics
+- Workflow Health
+- Negotiation Outcomes
+- Follow-Up Opportunities
+- Compact Call Database with summaries
 
 ## Demo Carrier
 
