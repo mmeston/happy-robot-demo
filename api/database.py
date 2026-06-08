@@ -38,6 +38,32 @@ CREATE TABLE IF NOT EXISTS call_logs (
     FOREIGN KEY (load_id) REFERENCES loads(load_id)
 );
 
+CREATE TABLE IF NOT EXISTS reporting_calls (
+    session_id TEXT PRIMARY KEY,
+    mc_number TEXT,
+    carrier_name TEXT,
+    load_id TEXT,
+    origin TEXT,
+    destination TEXT,
+    equipment_type TEXT,
+    offered_rate INTEGER,
+    carrier_requested_rate INTEGER,
+    final_rate INTEGER,
+    outcome TEXT NOT NULL,
+    summary TEXT,
+    mood TEXT,
+    letterboard_rate INTEGER,
+    last_offered_rate INTEGER,
+    call_duration_seconds INTEGER,
+    negotiation_rounds INTEGER,
+    tool_call_count INTEGER,
+    call_status TEXT,
+    call_end_event TEXT,
+    transfer_completed INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS booking_intakes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     booking_reference TEXT UNIQUE,

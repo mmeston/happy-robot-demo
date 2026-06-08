@@ -352,7 +352,7 @@
         <div class="subtitle">Inbound call performance, pricing outcomes, and follow-up opportunities.</div>
       </div>
       <div class="stamp">
-        <span id="dataSource">HappyRobot Twin</span><br>
+        <span id="dataSource">Reporting database</span><br>
         <span id="lastUpdated"></span>
       </div>
     </header>
@@ -402,207 +402,6 @@
   </main>
 
   <script>
-    const fallbackCalls = [
-      {
-        session_id: "d352ea3c-7c05-4302-bb59-8559b8e8803c",
-        mc_number: "MC-654321",
-        carrier_name: "ANG TRANSPORT INC",
-        load_id: "L1002",
-        origin: "Detroit, MI",
-        destination: "Atlanta, GA",
-        equipment_type: "Reefer",
-        offered_rate: 2000,
-        carrier_requested_rate: 2100,
-        final_rate: 2100,
-        outcome: "Sucess",
-        summary: "Carrier for ANG TRANSPORT INC booked Detroit, MI to Atlanta, GA reefer load at $2100 after negotiating up from $1900.",
-        created_at: "2026-06-07T22:28:59.494Z",
-        mood: "Hostile",
-        letterboard_rate: 2100,
-        last_offered_rate: 2000
-      },
-      {
-        session_id: "5c614d06-a0ef-4698-906d-555703ce21e9",
-        mc_number: "MC-123456",
-        carrier_name: "B MARRON LOGISTICS LLC",
-        load_id: "L1002",
-        origin: "Detroit, MI",
-        destination: "Atlanta, GA",
-        equipment_type: "Reefer",
-        offered_rate: 2100,
-        carrier_requested_rate: 2150,
-        final_rate: 2100,
-        outcome: "Sucess",
-        summary: "Carrier from B MARRON LOGISTICS LLC negotiated Detroit, MI to Atlanta, GA reefer load from $2000 to $2100 and accepted the final offer.",
-        created_at: "2026-06-07T22:17:09.463Z",
-        mood: "Friendly",
-        letterboard_rate: 2100,
-        last_offered_rate: 2100
-      },
-      {
-        session_id: "bb9f19e8-808f-4b4f-a28b-6b8215936122",
-        mc_number: "MC-123456",
-        carrier_name: "B MARRON LOGISTICS LLC",
-        load_id: "L1002",
-        origin: "Detroit, MI",
-        destination: "Atlanta, GA",
-        equipment_type: "Reefer",
-        offered_rate: 2100,
-        carrier_requested_rate: 2700,
-        final_rate: null,
-        outcome: "Rate too high",
-        summary: "Carrier requested $3000 then $2700 for Detroit, MI to Atlanta, GA reefer load; Paul held at $2100 and carrier declined.",
-        created_at: "2026-06-07T22:37:47.927Z",
-        mood: "Friendly",
-        letterboard_rate: 2100,
-        last_offered_rate: 2100
-      },
-      {
-        session_id: "d33d92b6-b122-4080-b9b3-d5fa4714ffb9",
-        mc_number: "MC-123456",
-        carrier_name: "B MARRON LOGISTICS LLC",
-        load_id: "L1002",
-        origin: "Detroit, MI",
-        destination: "Atlanta, GA",
-        equipment_type: "Reefer",
-        offered_rate: 2100,
-        carrier_requested_rate: 2800,
-        final_rate: null,
-        outcome: "Rate too high",
-        summary: "Carrier requested $3000 and then $2800 for Detroit, MI to Atlanta, GA reefer load; Paul held at $2100 and carrier declined.",
-        created_at: "2026-06-07T23:20:10.796Z",
-        mood: "Friendly",
-        letterboard_rate: 2100,
-        last_offered_rate: 2100
-      },
-      {
-        session_id: "6e135208-4abb-4c21-b412-eb5dab93246f",
-        mc_number: "MC-123456",
-        carrier_name: "B MARRON LOGISTICS LLC",
-        load_id: "L1002",
-        origin: "Detroit, MI",
-        destination: "Atlanta, GA",
-        equipment_type: "Reefer",
-        offered_rate: 2100,
-        carrier_requested_rate: 2600,
-        final_rate: null,
-        outcome: "Rate too high",
-        summary: "Carrier requested $2700 then $2600 for Detroit, MI to Atlanta, GA reefer load; Paul countered at $2100 and carrier declined.",
-        created_at: "2026-06-07T22:48:37.882Z",
-        mood: "Friendly",
-        letterboard_rate: 2100,
-        last_offered_rate: 2100
-      },
-      {
-        session_id: "3765ce57-3d94-4784-acf1-f7893a3523bd",
-        mc_number: "MC-654321",
-        carrier_name: "ANG TRANSPORT INC",
-        load_id: "L1002",
-        origin: "Detroit, MI",
-        destination: "Atlanta, GA",
-        equipment_type: "Reefer",
-        offered_rate: 2000,
-        carrier_requested_rate: 3800,
-        final_rate: null,
-        outcome: "Rate too high",
-        summary: "Carrier for ANG TRANSPORT INC requested $4000 then $3800 for Detroit, MI to Atlanta, GA reefer load; Paul held at $2000 and carrier declined.",
-        created_at: "2026-06-07T22:31:14.661Z",
-        mood: "Hostile",
-        letterboard_rate: 2100,
-        last_offered_rate: 2000
-      },
-      {
-        session_id: "fe7a1af0-b837-4711-a41b-607b1bf47ab4",
-        mc_number: "MC-123456",
-        carrier_name: "B MARRON LOGISTICS LLC",
-        load_id: "L1001",
-        origin: "Chicago, IL",
-        destination: "Dallas, TX",
-        equipment_type: "Dry Van",
-        offered_rate: 1850,
-        carrier_requested_rate: 2100,
-        final_rate: null,
-        outcome: "Rate too high",
-        summary: "Carrier requested $2500 then $2100 for Chicago, IL to Dallas, TX dry van; Paul offered up to $1850 and carrier declined.",
-        created_at: "2026-06-07T22:21:27.598Z",
-        mood: "Friendly",
-        letterboard_rate: 1850,
-        last_offered_rate: 1850
-      },
-      {
-        session_id: "2e5075bc-87aa-42f4-b59f-abde26bd8a97",
-        mc_number: "MC-123456",
-        carrier_name: "B MARRON LOGISTICS LLC",
-        load_id: "L1002",
-        origin: "Detroit, MI",
-        destination: "Atlanta, GA",
-        equipment_type: "Reefer",
-        offered_rate: 2100,
-        carrier_requested_rate: 2800,
-        final_rate: null,
-        outcome: "Rate too high",
-        summary: "Carrier requested $3000 then $2800 for Detroit, MI to Atlanta, GA reefer load; Paul held at $2100 and carrier declined.",
-        created_at: "2026-06-07T23:12:39.190Z",
-        mood: "Friendly",
-        letterboard_rate: 2100,
-        last_offered_rate: 2100
-      },
-      {
-        session_id: "73093f88-18f2-4aed-9252-c714cf4a3464",
-        mc_number: "MC-123456",
-        carrier_name: "B MARRON LOGISTICS LLC",
-        load_id: "L1001",
-        origin: "Chicago, IL",
-        destination: "Dallas, TX",
-        equipment_type: "Dry Van",
-        offered_rate: 1800,
-        carrier_requested_rate: 1800,
-        final_rate: 1800,
-        outcome: "Sucess",
-        summary: "Carrier from B MARRON LOGISTICS LLC booked Chicago, IL to Dallas, TX dry van load L1001 at $1800 after negotiating up from the initial $1775 offer.",
-        created_at: "2026-06-07T22:19:31.069Z",
-        mood: "Friendly",
-        letterboard_rate: 1850,
-        last_offered_rate: 1800
-      },
-      {
-        session_id: "f695fff9-7e65-4b9d-bac2-a6b189043de2",
-        mc_number: "MC-123456",
-        carrier_name: "B MARRON LOGISTICS LLC",
-        load_id: "L1002",
-        origin: "Detroit, MI",
-        destination: "Atlanta, GA",
-        equipment_type: "Reefer",
-        offered_rate: 2100,
-        carrier_requested_rate: 2800,
-        final_rate: null,
-        outcome: "Rate too high",
-        summary: "Carrier requested $3000 then $2800 for Detroit, MI to Atlanta, GA reefer load; Paul held at $2100 and carrier declined.",
-        created_at: "2026-06-07T23:01:32.504Z",
-        mood: "Friendly",
-        letterboard_rate: 2100,
-        last_offered_rate: 2100
-      },
-      {
-        session_id: "e4ad6b8e-97b8-4ac1-9521-a0292a34e34c",
-        mc_number: "MC-123456",
-        carrier_name: "B MARRON LOGISTICS LLC",
-        load_id: "L1001",
-        origin: "Chicago, IL",
-        destination: "Dallas, TX",
-        equipment_type: "Dry Van",
-        offered_rate: 1800,
-        carrier_requested_rate: 20200,
-        final_rate: 1800,
-        outcome: "Sucess",
-        summary: "Carrier for B MARRON LOGISTICS LLC booked Chicago, IL to Dallas, TX dry van load at $1800 after negotiating from $1700 and high counteroffers.",
-        created_at: "2026-06-07T22:27:07.054Z",
-        mood: "Friendly",
-        letterboard_rate: 1850,
-        last_offered_rate: 1800
-      }
-    ];
-
     const demoCalls = [
       {
         session_id: "demo-001",
@@ -620,7 +419,11 @@
         created_at: "2026-06-07T20:02:00Z",
         mood: "Friendly",
         letterboard_rate: 1850,
-        last_offered_rate: 1800
+        last_offered_rate: 1800,
+        call_duration_seconds: 188,
+        negotiation_rounds: 2,
+        tool_call_count: 7,
+        transfer_completed: true
       },
       {
         session_id: "demo-002",
@@ -638,7 +441,11 @@
         created_at: "2026-06-07T20:16:00Z",
         mood: "Friendly",
         letterboard_rate: 2100,
-        last_offered_rate: 2050
+        last_offered_rate: 2050,
+        call_duration_seconds: 214,
+        negotiation_rounds: 2,
+        tool_call_count: 8,
+        transfer_completed: true
       },
       {
         session_id: "demo-003",
@@ -656,7 +463,11 @@
         created_at: "2026-06-07T20:31:00Z",
         mood: "Friendly",
         letterboard_rate: 1850,
-        last_offered_rate: 1850
+        last_offered_rate: 1850,
+        call_duration_seconds: 231,
+        negotiation_rounds: 3,
+        tool_call_count: 8,
+        transfer_completed: false
       },
       {
         session_id: "demo-004",
@@ -674,7 +485,11 @@
         created_at: "2026-06-07T20:44:00Z",
         mood: "Friendly",
         letterboard_rate: 1750,
-        last_offered_rate: 1700
+        last_offered_rate: 1700,
+        call_duration_seconds: 166,
+        negotiation_rounds: 1,
+        tool_call_count: 6,
+        transfer_completed: true
       },
       {
         session_id: "demo-005",
@@ -692,7 +507,11 @@
         created_at: "2026-06-07T21:03:00Z",
         mood: "Neutral",
         letterboard_rate: 2350,
-        last_offered_rate: 2350
+        last_offered_rate: 2350,
+        call_duration_seconds: 258,
+        negotiation_rounds: 3,
+        tool_call_count: 9,
+        transfer_completed: false
       },
       {
         session_id: "demo-006",
@@ -710,7 +529,11 @@
         created_at: "2026-06-07T21:15:00Z",
         mood: "Friendly",
         letterboard_rate: 1580,
-        last_offered_rate: 1500
+        last_offered_rate: 1500,
+        call_duration_seconds: 142,
+        negotiation_rounds: 1,
+        tool_call_count: 6,
+        transfer_completed: true
       },
       {
         session_id: "demo-007",
@@ -728,7 +551,11 @@
         created_at: "2026-06-07T21:28:00Z",
         mood: "Hostile",
         letterboard_rate: 2600,
-        last_offered_rate: 2600
+        last_offered_rate: 2600,
+        call_duration_seconds: 276,
+        negotiation_rounds: 3,
+        tool_call_count: 9,
+        transfer_completed: false
       },
       {
         session_id: "demo-008",
@@ -746,7 +573,11 @@
         created_at: "2026-06-07T21:43:00Z",
         mood: "Friendly",
         letterboard_rate: 2100,
-        last_offered_rate: 2100
+        last_offered_rate: 2100,
+        call_duration_seconds: 203,
+        negotiation_rounds: 2,
+        tool_call_count: 8,
+        transfer_completed: false
       },
       {
         session_id: "demo-009",
@@ -764,7 +595,11 @@
         created_at: "2026-06-07T21:56:00Z",
         mood: "Neutral",
         letterboard_rate: null,
-        last_offered_rate: null
+        last_offered_rate: null,
+        call_duration_seconds: 96,
+        negotiation_rounds: 0,
+        tool_call_count: 3,
+        transfer_completed: false
       },
       {
         session_id: "demo-010",
@@ -782,7 +617,11 @@
         created_at: "2026-06-07T22:04:00Z",
         mood: "Neutral",
         letterboard_rate: 1850,
-        last_offered_rate: null
+        last_offered_rate: null,
+        call_duration_seconds: 84,
+        negotiation_rounds: 0,
+        tool_call_count: 2,
+        transfer_completed: false
       },
       {
         session_id: "demo-011",
@@ -800,7 +639,11 @@
         created_at: "2026-06-07T22:17:00Z",
         mood: "Friendly",
         letterboard_rate: 1650,
-        last_offered_rate: 1580
+        last_offered_rate: 1580,
+        call_duration_seconds: 174,
+        negotiation_rounds: 1,
+        tool_call_count: 6,
+        transfer_completed: true
       },
       {
         session_id: "demo-012",
@@ -818,7 +661,11 @@
         created_at: "2026-06-07T22:31:00Z",
         mood: "Friendly",
         letterboard_rate: 1350,
-        last_offered_rate: 1200
+        last_offered_rate: 1200,
+        call_duration_seconds: 111,
+        negotiation_rounds: 0,
+        tool_call_count: 4,
+        transfer_completed: false
       },
       {
         session_id: "demo-013",
@@ -836,7 +683,11 @@
         created_at: "2026-06-07T22:44:00Z",
         mood: "Friendly",
         letterboard_rate: 1750,
-        last_offered_rate: 1750
+        last_offered_rate: 1750,
+        call_duration_seconds: 199,
+        negotiation_rounds: 2,
+        tool_call_count: 7,
+        transfer_completed: false
       },
       {
         session_id: "demo-014",
@@ -854,7 +705,11 @@
         created_at: "2026-06-07T23:02:00Z",
         mood: "Neutral",
         letterboard_rate: 2350,
-        last_offered_rate: 2325
+        last_offered_rate: 2325,
+        call_duration_seconds: 221,
+        negotiation_rounds: 2,
+        tool_call_count: 8,
+        transfer_completed: true
       }
     ];
 
@@ -880,12 +735,24 @@
       destination: call.destination || "Unknown destination",
       equipment_type: call.equipment_type || "-",
       summary: call.summary || "No summary captured.",
-      created_at: call.created_at || new Date().toISOString()
+      created_at: call.created_at || new Date().toISOString(),
+      call_duration_seconds: toNumber(call.call_duration_seconds),
+      negotiation_rounds: toNumber(call.negotiation_rounds),
+      tool_call_count: toNumber(call.tool_call_count),
+      transfer_completed: call.transfer_completed === true || call.transfer_completed === 1
     });
 
     const money = (value) => {
       if (value === null || value === undefined || Number.isNaN(Number(value))) return "-";
       return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(Number(value));
+    };
+
+    const duration = (seconds) => {
+      if (seconds === null || seconds === undefined || Number.isNaN(Number(seconds))) return "-";
+      const total = Number(seconds);
+      const mins = Math.floor(total / 60);
+      const secs = total % 60;
+      return `${mins}:${String(secs).padStart(2, "0")}`;
     };
 
     const percent = (value) => `${Math.round(value * 100)}%`;
@@ -922,6 +789,7 @@
         if (!call.letterboard_rate || !call.final_rate) return null;
         return Number(call.letterboard_rate) - Number(call.final_rate);
       });
+      const avgDuration = avg(calls, (call) => call.call_duration_seconds);
       const friendly = calls.filter((call) => call.mood === "Friendly").length;
       const neutral = calls.filter((call) => call.mood === "Neutral").length;
       const hostile = calls.filter((call) => call.mood === "Hostile").length;
@@ -951,7 +819,7 @@
         ["Avg Savings", money(avgSavings), "Booked rate below authority"],
         ["Rate Declines", declines.length, "Carrier ask exceeded authority"],
         ["Follow-Ups", followUpCandidates.length, "Close gaps worth rep action"],
-        ["Sentiment Mix", `${friendly}/${neutral}/${hostile}`, "Friendly / Neutral / Hostile"]
+        ["Avg Handle Time", duration(Math.round(avgDuration || 0)), "Call duration from workflow"]
       ];
 
       document.getElementById("metrics").innerHTML = metricItems.map(([label, value, note]) => `
@@ -976,7 +844,7 @@
         [
           "Rep Action",
           `${followUpCandidates.length} follow-up targets`,
-          closeFollowUps ? `${closeFollowUps} declined calls were within $250 of the last offer. Those are warm callbacks before the load has to be reposted.` : "No close rate-decline callbacks are waiting right now."
+          closeFollowUps ? `${closeFollowUps} declined calls were within $250 of the last offer. Sentiment is ${friendly}/${neutral}/${hostile} friendly, neutral, hostile.` : `Sentiment is ${friendly}/${neutral}/${hostile} friendly, neutral, hostile. No close rate-decline callbacks are waiting right now.`
         ]
       ];
 
@@ -1046,7 +914,7 @@
         ["Booked below authority", booked.filter((call) => call.final_rate < call.letterboard_rate).length, booked.length, "secondary"],
         ["Booked at authority", booked.filter((call) => call.final_rate >= call.letterboard_rate).length, booked.length, ""],
         ["Declined at authority", declines.filter((call) => call.last_offered_rate >= call.letterboard_rate).length, declines.length, ""],
-        ["Hostile calls", hostile, calls.length, "secondary"]
+        ["Mock transfers completed", calls.filter((call) => call.transfer_completed).length, booked.length, "secondary"]
       ];
 
       document.getElementById("pricingMix").innerHTML = pricingRows.map(([label, value, total, tone]) => {
@@ -1083,7 +951,7 @@
 
     async function loadDashboard() {
       const params = new URLSearchParams(window.location.search);
-      if (params.get("source") !== "twin") {
+      if (params.get("source") === "demo") {
         renderDashboard(demoCalls, "Curated demo reporting dataset");
         return;
       }
@@ -1093,7 +961,7 @@
         if (!response.ok) throw new Error(`Dashboard data returned ${response.status}`);
         const payload = await response.json();
         if (payload.rows && payload.rows.length) {
-          renderDashboard(payload.rows, "HappyRobot Twin live data");
+          renderDashboard([...demoCalls, ...payload.rows], "Demo baseline + live reporting database");
           return;
         }
         renderDashboard(demoCalls, "Curated demo reporting dataset");

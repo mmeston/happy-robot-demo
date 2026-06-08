@@ -181,3 +181,72 @@ class CallLogRequest(BaseModel):
 
 class CallLogResponse(BaseModel):
     success: bool
+
+
+class ReportingCallRequest(BaseModel):
+    session_id: str
+    mc_number: Optional[str] = None
+    carrier_name: Optional[str] = None
+    load_id: Optional[str] = None
+    origin: Optional[str] = None
+    destination: Optional[str] = None
+    equipment_type: Optional[str] = None
+    offered_rate: Optional[int] = Field(default=None, gt=0)
+    carrier_requested_rate: Optional[int] = Field(default=None, gt=0)
+    final_rate: Optional[int] = Field(default=None, gt=0)
+    outcome: str
+    summary: Optional[str] = None
+    mood: Optional[str] = None
+    letterboard_rate: Optional[int] = Field(default=None, gt=0)
+    loadboard_rate: Optional[int] = Field(default=None, gt=0)
+    last_offered_rate: Optional[int] = Field(default=None, gt=0)
+    call_duration_seconds: Optional[int] = Field(default=None, ge=0)
+    negotiation_rounds: Optional[int] = Field(default=None, ge=0, le=3)
+    tool_call_count: Optional[int] = Field(default=None, ge=0)
+    call_status: Optional[str] = None
+    call_end_event: Optional[str] = None
+    transfer_completed: bool = False
+
+    @field_validator("session_id")
+    @classmethod
+    def validate_session_id(cls, value: str) -> str:
+        return _strip_required(value, "session_id")
+
+    @field_validator("outcome")
+    @classmethod
+    def validate_reporting_outcome(cls, value: str) -> str:
+        return _strip_required(value, "outcome")
+
+    @field_validator(
+        "mc_number",
+        "carrier_name",
+        "load_id",
+        "origin",
+        "destination",
+        "equipment_type",
+        "summary",
+        "mood",
+        "call_status",
+        "call_end_event",
+    )
+    @classmethod
+    def strip_optional_reporting_text(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+
+        stripped = value.strip()
+        return stripped or None
+
+    @field_validator("load_id")
+    @classmethod
+    def normalize_reporting_load_id(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+
+        stripped = value.strip()
+        return stripped.upper() or None
+
+
+class ReportingCallResponse(BaseModel):
+    success: bool
+    session_id: str

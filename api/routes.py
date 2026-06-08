@@ -3,9 +3,7 @@ from pathlib import Path
 from typing import Optional
 from fastapi import APIRouter, Query
 from fastapi.responses import FileResponse
-import requests
 
-from api.config import TWIN_API_KEY, TWIN_GATEWAY_URL, TWIN_ORG_ID, TWIN_TABLE_NAME
 from api.database import db_connection
 from api.errors import raise_tool_error
 from api.models import (
@@ -18,6 +16,8 @@ from api.models import (
     CheckBidRequest,
     CheckBidResponse,
     NegotiationStatusResponse,
+    ReportingCallRequest,
+    ReportingCallResponse,
     UpdateNegotiationStatusRequest,
     UpdateNegotiationStatusResponse,
 )
@@ -40,66 +40,118 @@ def dashboard():
 
 @router.get("/dashboard-data", include_in_schema=False)
 def dashboard_data():
-    if not TWIN_GATEWAY_URL:
-        return {
-            "source": "fallback",
-            "configured": False,
-            "rows": [],
-            "message": "TWIN_GATEWAY_URL is not configured.",
-        }
-
-    headers = {}
-    if TWIN_ORG_ID:
-        headers["x-org-id"] = TWIN_ORG_ID
-    if TWIN_API_KEY:
-        headers["Authorization"] = f"Bearer {TWIN_API_KEY}"
-        headers["x-api-key"] = TWIN_API_KEY
-
-    base_url = TWIN_GATEWAY_URL.rstrip("/")
-    path = f"/twin/tables/{TWIN_TABLE_NAME}/rows"
-    url = f"{base_url}{path}"
-
-    try:
-        response = requests.get(
-            url,
-            headers=headers,
-            params={"limit": 500},
-            timeout=10,
-        )
-        if response.status_code == 404:
-            response = requests.get(
-                f"{base_url}/tables/{TWIN_TABLE_NAME}/rows",
-                headers=headers,
-                params={"limit": 500},
-                timeout=10,
-            )
-        response.raise_for_status()
-    except requests.RequestException as exc:
-        return {
-            "source": "fallback",
-            "configured": True,
-            "rows": [],
-            "message": f"Unable to read Twin rows: {exc}",
-        }
-
-    payload = response.json()
-    if isinstance(payload, list):
-        rows = payload
-    elif isinstance(payload, dict):
-        rows = (
-            payload.get("rows")
-            or payload.get("data")
-            or payload.get("result")
-            or []
-        )
-    else:
-        rows = []
+    with db_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT *
+            FROM reporting_calls
+            ORDER BY datetime(created_at) DESC
+            LIMIT 500
+            """
+        ).fetchall()
 
     return {
-        "source": "twin",
-        "configured": True,
-        "rows": rows,
+        "source": "reporting_db",
+        "rows": [dict(row) for row in rows],
     }
+
+
+@router.post("/reporting/call", response_model=ReportingCallResponse)
+def upsert_reporting_call(request: ReportingCallRequest):
+    with db_connection() as conn:
+        if request.load_id:
+            load = conn.execute(
+                "SELECT load_id FROM loads WHERE load_id = ?",
+                (request.load_id,),
+            ).fetchone()
+
+            if not load:
+                raise_tool_error(
+                    404,
+                    "LOAD_NOT_FOUND",
+                    f"Cannot report against unknown load {request.load_id}.",
+                    field="load_id",
+                    details={"load_id": request.load_id},
+                )
+
+        conn.execute(
+            """
+            INSERT INTO reporting_calls (
+                session_id,
+                mc_number,
+                carrier_name,
+                load_id,
+                origin,
+                destination,
+                equipment_type,
+                offered_rate,
+                carrier_requested_rate,
+                final_rate,
+                outcome,
+                summary,
+                mood,
+                letterboard_rate,
+                last_offered_rate,
+                call_duration_seconds,
+                negotiation_rounds,
+                tool_call_count,
+                call_status,
+                call_end_event,
+                transfer_completed,
+                created_at,
+                updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT(session_id) DO UPDATE SET
+                mc_number = excluded.mc_number,
+                carrier_name = excluded.carrier_name,
+                load_id = excluded.load_id,
+                origin = excluded.origin,
+                destination = excluded.destination,
+                equipment_type = excluded.equipment_type,
+                offered_rate = excluded.offered_rate,
+                carrier_requested_rate = excluded.carrier_requested_rate,
+                final_rate = excluded.final_rate,
+                outcome = excluded.outcome,
+                summary = excluded.summary,
+                mood = excluded.mood,
+                letterboard_rate = excluded.letterboard_rate,
+                last_offered_rate = excluded.last_offered_rate,
+                call_duration_seconds = excluded.call_duration_seconds,
+                negotiation_rounds = excluded.negotiation_rounds,
+                tool_call_count = excluded.tool_call_count,
+                call_status = excluded.call_status,
+                call_end_event = excluded.call_end_event,
+                transfer_completed = excluded.transfer_completed,
+                updated_at = CURRENT_TIMESTAMP
+            """,
+            (
+                request.session_id,
+                request.mc_number,
+                request.carrier_name,
+                request.load_id,
+                request.origin,
+                request.destination,
+                request.equipment_type,
+                request.offered_rate,
+                request.carrier_requested_rate,
+                request.final_rate,
+                request.outcome,
+                request.summary,
+                request.mood,
+                request.letterboard_rate or request.loadboard_rate,
+                request.last_offered_rate,
+                request.call_duration_seconds,
+                request.negotiation_rounds,
+                request.tool_call_count,
+                request.call_status,
+                request.call_end_event,
+                1 if request.transfer_completed else 0,
+            ),
+        )
+        conn.commit()
+
+    return {"success": True, "session_id": request.session_id}
 
 
 @router.get("/loads")
